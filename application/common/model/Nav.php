@@ -9,5 +9,5 @@ namespace app\common\model;
 
 class Nav extends Basic{
     protected $openCache = true;
-    static $cacheKey = 'nav_key_';
+    static $cachePrex = 'nav_key_';
 }

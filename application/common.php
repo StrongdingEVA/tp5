@@ -451,7 +451,7 @@ function SL() {
     if (file_exists(APP_PATH . NOW_MODULE . '/logic/'. $urlArray[0] .'.php')) {
         $lName = \think\APP::$namespace . '\\' . NOW_MODULE . 'logic\\' . $urlArray[0];
     } else if(file_exists(APP_PATH . 'common/logic/'. $urlArray[0] .'.php')){
-        $lName = \think\APP::$namespace . '\\' . NOW_MODULE . 'logic\\' . $urlArray[0];
+        $lName = \think\APP::$namespace . '\\' . 'common\\logic\\' . $urlArray[0];
     }else{
         exception('不存在要实例化的逻辑类：' . $urlArray[0],-1);
     }
@@ -551,4 +551,37 @@ function parse_name($name, $type=0) {
     } else {
         return strtolower(trim(preg_replace("/[A-Z]/", "_\\0", $name), "_"));
     }
+}
+/**
+ * 获取随机字符串
+ * @param int $length
+ * @param string $char
+ * @return string
+ */
+function getNonstr($length = 32, $char = '123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    if(!is_int($length) || $length < 0) {
+        $length = 32;
+    }
+
+    $string = '';
+    for($i = $length; $i > 0; $i--) {
+        $string .= $char[mt_rand(0, strlen($char) - 1)];
+    }
+    return $string;
+}
+
+/**
+ * 验证邮箱
+ * @param $email
+ * @return bool
+ */
+function checkEmail($email){
+    if(preg_match('/^[A-Za-z0-9]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/',$email)){
+        return true;
+    }
+    return false;
+}
+
+function checkMobile($mobile){
+    return false;
 }

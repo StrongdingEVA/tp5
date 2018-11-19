@@ -18,12 +18,12 @@ class Base extends Controller {
     public function __construct(){
         header("Content-type: text/html; charset=UTF-8");
         parent::__construct();
-        $this->initial();
+//        $this->initial();
     }
 
     private function initial(){
         $nav = SL('Common/getNav');
-        $this->assign($nav,$nav);
+        $this->mapAssign($nav);
     }
 
     /**
@@ -272,9 +272,9 @@ class Base extends Controller {
 
         if($len <= 1){
             if ($analysis){
-                return $this->display($param);
+                return $this->display($data);
             }else{
-                $this->mapAssign($param);
+                $this->mapAssign($data);
                 return $this->fetch($tempName);
             }
         }else if($len == 2){

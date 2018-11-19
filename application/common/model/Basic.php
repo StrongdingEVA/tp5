@@ -14,8 +14,10 @@ class Basic extends Model {
 //    protected function setCreateTimeAttr(){
 //        return time();
 //    }
-    static $cacheKey = 'basic_key_';
-    protected $openCache = false;
+    static $cachePrex = 'basic_key_'; //缓存前缀
+    protected $openValidate = false; //是否开启模型自动验证
+    protected $openCache = false; //是否开启主键缓存
+    protected $cacheKey = 'id'; //主键名
     protected $autoWriteTimestamp = true; //填充时间
     protected $updateTime = false; //不填充update_time
 
@@ -28,7 +30,7 @@ class Basic extends Model {
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function getById(int $id,string $field = '*'){
+    public function getById(int $id,string $field = '*'):array {
         if(!$id){
             exception('缺少必要参数',-1);
         }
@@ -57,11 +59,19 @@ class Basic extends Model {
         $keyData = $data[$key];
         unset($data[$key]);
         if(empty($keyData)){
-            $this->save($data);
+            if($this->openValidate){
+                $this->validate(true)->save($data);
+            }else{
+                $this->save($data);
+            }
             $res = $this->id;
         }else{
             $where = $key . '=' . $keyData;
-            $this->allowField(true)->save($data,$where);
+            if($this->openValidate){
+                $this->validate(true)->allowField(true)->save($data,$where);
+            }else{
+                $this->allowField(true)->save($data,$where);
+            }
             $res = 1;
             if($this->openCache){
                 cache($this->getCacheKey($keyData),null);
@@ -80,44 +90,98 @@ class Basic extends Model {
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function getListRows(array $map = array(),bool $paginate = false,$apiModel = false){
-        $where = $map['where'];
+    public function getListRows(array $map = array(),bool $paginate = false,$apiModel = false):array {
+        $condition = $map['condition'];
         $order = $map['order'];
         $page = $map['page'];
         $limit = $map['limit'] ?? 10;
         $field = $map['field'] ?? '*';
-
-        foreach ($where as $item){
-            $this->where($item['field'],$item['opt'] ? $item['opt'] : '=',$item['value']);
+        $hiddenField = $map['hidden'] ?? array(); //设置不显示的字段
+        $isJoin = false;
+        foreach ($condition as $item){
+            $c = $item['where'];
+            switch ($c){
+                case 'where':
+                    $this->where($item['field'],$item['opt'] ? $item['opt'] : '=',$item['value']);
+                    break;
+                case 'whereor':
+                    $this->whereOr($item['field'],$item['opt'] ? $item['opt'] : '=',$item['value']);
+                    break;
+                case 'alias':
+                    $this->alias($item['alias']);
+                    break;
+                case 'join':
+                    $this->join($item['join'],$item['on']);
+                    $isJoin = true;
+                    break;
+                default:
+                    break;
+            }
         }
         $order && $this->order($order);
         $page && $this->page($page);
         $page && $this->limit($limit);
         $field && $this->field($field);
-        $this->openCache && $this->field('id');
+        //如果开启了主键缓存（根据表主键建立缓存） 查询时设置查询字段为id，之后根据id从缓存中取数据
+        //如果使用链接查询则不使用主键缓存
+        !$isJoin && $this->openCache && $this->field($this->cacheKey);
         if($paginate){
             if($apiModel){
-                $res = $this->paginate($limit)->toArray();
-                return $this->listFormat($res);
+                $res = $this->hidden($hiddenField)->paginate($limit)->toArray();
+                !$isJoin && $res = $this->listFormat($res);
+                return $res;
             }else{
-                $res = $this->paginate($limit);
+                $res = $this->hidden($hiddenField)->paginate($limit);
                 $page = $res->render(); //分页
                 $list = $res->toArray(); //数据
-                return [$page,$this->listFormat($list['data'])];
+                !$isJoin && $res = $this->listFormat($list['data']);
+                return [$page,$res];
             }
         }else{
-            return collection($this->select())->toArray();
+//            return $this->fetchSql(true)->select();
+            $res = collection($this->hidden($hiddenField)->select())->toArray();
+            !$isJoin && $res = $this->listFormat($res);
+            return $res;
         }
     }
 
+    public function getInfoFind($condition = '',string $field = '*',array $hidden = array()):array {
+        if(!is_array($condition)){
+            $this->where($condition);
+            $condition = array();
+        }
+        $field = $field ?? '*';
+        $hiddenField = $hidden ?? array(); //设置不显示的字段
+        foreach ($condition as $item){
+            $c = $item['where'];
+            switch ($c){
+                case 'where':
+                    $this->where($item['field'],$item['opt'] ? $item['opt'] : '=',$item['value']);
+                    break;
+                case 'whereor':
+                    $this->whereOr($item['field'],$item['opt'] ? $item['opt'] : '=',$item['value']);
+                    break;
+                case 'alias':
+                    $this->alias($item['alias']);
+                    break;
+                case 'join':
+                    $this->join($item['join'],$item['on']);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return $this->field($field)->hidden($hiddenField)->find()->toArray();
+    }
+
     public function getCacheKey($id){
-        return self::$cacheKey . $id;
+        return self::$cachePrex . $id;
     }
 
     public function listFormat(array $data):array {
         if($this->openCache){
             foreach ($data['data'] as &$item){
-                $res = $this->getById($item['id']);
+                $res = $this->getById($item[$this->cacheKey]);
                 $item = $res;
             }
         }
