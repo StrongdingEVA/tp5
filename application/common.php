@@ -585,3 +585,27 @@ function checkEmail($email){
 function checkMobile($mobile){
     return false;
 }
+
+function aesEncrypt($data,string $cipher = null,string $key = null,int $options = 0){
+    $cipher = $cipher ?? config('AES_CIPHER');
+    $key = $key ?? config('AES_KEY');
+    $tag = '';
+    if (in_array($cipher, openssl_get_cipher_methods()) && $data){
+        $ivlen = openssl_cipher_iv_length($cipher);
+        $iv = openssl_random_pseudo_bytes($ivlen);
+        $ciphertext = base64_encode(openssl_encrypt($data, $cipher, $key, $options, $iv, $tag));
+        return ['data' => $ciphertext,'cipher' => $cipher,'iv' => base64_encode($iv),'tag' => base64_encode($tag)];
+    }
+    return '';
+}
+
+function aesDecrypt($data,$iv,$tag,string $cipher = null,string $key = null,int $options = 0){
+    $cipher = $cipher ?? config('AES_CIPHER');
+    $key = $key ?? config('AES_KEY');
+
+    if($data && $iv && $tag){
+        $original_plaintext = openssl_decrypt(base64_decode($data), $cipher, $key, $options, base64_decode($iv), base64_decode($tag));
+        return $original_plaintext;
+    }
+    return '';
+}

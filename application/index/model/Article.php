@@ -11,9 +11,11 @@ use app\common\model\Basic;
 //use think\Model;
 
 class Article extends Basic {
-    protected $openCache = true;
-    public function getArticle(){
-        $result = $this->getById(1);
-        return $result;
+    protected $openCache = false;
+    protected $bo = ['belongsTo'];
+
+
+    public function belongsTo_(){
+        return $this->belongsTo('User','id');
     }
 }

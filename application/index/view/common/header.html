@@ -3,12 +3,16 @@
         <div class="container">
             <div class="header-topbar hidden-xs link-border">
                 <ul class="site-nav topmenu">
-                    <li><a href="#" >标签云</a></li>
-                    <li><a href="#" rel="nofollow" >读者墙</a></li>
-                    <li><a href="#" title="RSS订阅" >
-                        <i class="fa fa-rss">
-                        </i> RSS订阅
-                    </a></li>
+                    {if condition="!$uinfo"}
+                    <li><a href="#" >登录</a></li>
+                    <li><a href="#" rel="nofollow" >注册</a></li>
+                    {else/}
+                    <li><a href="#" rel="nofollow" >{$uinfo['nickname']}</a></li>
+                    {/if}
+                    <!--<li><a href="#" title="RSS订阅" >-->
+                        <!--<i class="fa fa-rss">-->
+                        <!--</i> RSS订阅-->
+                    <!--</a></li>-->
                 </ul>
                 勤记录 懂分享</div>
             <div class="navbar-header">

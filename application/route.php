@@ -10,12 +10,14 @@
 // +----------------------------------------------------------------------
 
 return [
-    '__pattern__' => [
-        'name' => '\w+',
-    ],
-    '[hello]'     => [
-        ':id'   => ['index/hello', ['method' => 'get'], ['id' => '\d+']],
-        ':name' => ['index/hello', ['method' => 'post']],
-    ],
-
+//    '__pattern__' => [
+//        'name' => '\w+',
+//    ],
+//    '[hello]'     => [
+//        ':id'   => ['index/hello', ['method' => 'get'], ['id' => '\d+']],
+//        ':name' => ['index/hello', ['method' => 'post']],
+//    ],
+    'login'   => ['index/login',['method' => 'post','ext'=>'html']],
+    'reg'   => ['index/uReg',['method' => 'post','ext'=>'html']],
+    'm/:id'   => ['index/show',['method' => 'get','ext'=>'html']],
 ];

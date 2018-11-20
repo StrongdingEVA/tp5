@@ -14,16 +14,41 @@ use think\Controller;
 use think\Request;
 
 class Base extends Controller {
-
+    public $u = '';
     public function __construct(){
         header("Content-type: text/html; charset=UTF-8");
         parent::__construct();
-//        $this->initial();
+        $this->initial();
+        $this->iniUser();
     }
 
     private function initial(){
         $nav = SL('Common/getNav');
         $this->mapAssign($nav);
+    }
+
+    /**
+     * 初始化登录用户
+     */
+    private function iniUser(){
+        $prefix = config('LOGIN_COOKIE_PREFIX') ?? '';
+        $cipher = $cipher ?? config('AES_CIPHER');
+        $key = $key ?? config('AES_KEY');
+        $iv = cookie($prefix . 'iv');
+        $u = cookie($prefix . 'u');
+        $tag = cookie($prefix . 'tag');
+        $uInfo = aesDecrypt($u,$iv,$tag,$cipher,$key);
+        $uInfo = json_decode($uInfo,true);
+        if($uInfo){
+            $uInfo = SM('User')->getById($uInfo['id']);
+            if(!$uInfo['status']){
+                $this->cyasync(['msg' => '您已被禁止登陆','wait' => 3,'status' => -1],false);
+            }
+            $this->u = $uInfo;
+            $this->assign('uinfo',$uInfo);
+        }else{
+            $this->redirect('/');
+        }
     }
 
     /**
@@ -256,43 +281,30 @@ class Base extends Controller {
      * @param $tempName  是否指定模板路径  否则使用默认路径
      * @param $analysis  是否直接解析 不经过模板 默认false
      */
-    public function cyback($data,string $tempName = '',bool $analysis = false){
-        //len为1 直接fetch 、
-        //len为2 是想要ajax返回
-        //len为3 是想用系统的error success 返回
-        $temp = $data;
-        if(!is_array($temp)){
-            $data = array();
-            $data[] = $temp;
-            unset($temp);
-        }
-        $len = count($data);
-        $param = $data[0] ? $data[0] : array();
-        $status = $data[1] ? $data[1] : -1;
-
-        if($len <= 1){
-            if ($analysis){
-                return $this->display($data);
-            }else{
-                $this->mapAssign($data);
-                return $this->fetch($tempName);
-            }
-        }else if($len == 2){
-            return $this->cajax($param['msg'],$param['data'],$status);
-        }else if($len == 3){
-            !$param['url'] && $param['url'] = '';
-            !$param['data'] && $param['data'] = array();
-            !$param['wait'] && $param['wait'] = 3;
-            if($status == SUCCESS_STATUS){
-                !$param['msg'] && $param['msg'] = '成功';
-                return $this->success($param['msg'],$param['url'],$param['data'],$param['wait']);
-            }
-            if($status == FAIL_STATUS){
-                !$param['msg'] && $param['msg'] = '出错了';
-                return $this->error($param['msg'],$param['url'],$param['data'],$param['wait']);
-            }
+    public function cyback(array $data = array(),string $tempName = '',bool $analysis = false){
+        if ($analysis){
+            return $this->display($data);
         }else{
-            exit('errrrrrrrrr');
+            $this->mapAssign($data);
+            return $this->fetch($tempName);
+        }
+    }
+
+    public function cyasync(array $data = array(),bool $isAsync = true){
+        if($isAsync){
+            return $this->cajax($data['msg'] ?? '',$data['data'],$data['status']);
+        }else{
+            !$data['url'] && $data['url'] = '';
+            !$data['data'] && $data['data'] = array();
+            !$data['wait'] && $data['wait'] = 3;
+            if($data['status'] == SUCCESS_STATUS){
+                !$data['msg'] && $data['msg'] = '成功';
+                return $this->success($data['msg'],$data['url'],$data['data'],$data['wait']);
+            }
+            if($data['status'] == FAIL_STATUS){
+                !$data['msg'] && $data['msg'] = '出错了';
+                return $this->error($data['msg'],$data['url'],$data['data'],$data['wait']);
+            }
         }
     }
 
@@ -305,7 +317,7 @@ class Base extends Controller {
     }
 
 
-    public function cajax(string $msg,$data = '',int $status = -1){
+    public function cajax(string $msg = '',$data = '',int $status = -1){
         !$data && $data = (object)$data;
         return ['status' => $status,'msg' => $msg,'data' => $data];
     }

@@ -20,6 +20,7 @@ class Basic extends Model {
     protected $cacheKey = 'id'; //主键名
     protected $autoWriteTimestamp = true; //填充时间
     protected $updateTime = false; //不填充update_time
+    protected $bo = []; //模型的关联
 
     /**
      * @param int $id 根据主键获取数据
@@ -37,11 +38,13 @@ class Basic extends Model {
         if($this->openCache){
             $res = cache($this->getCacheKey($id));
             if(!$res){
-                $res = $this->field($field)->find($id)->toArray();
+                $obj = $this->field($field)->find($id);
+                $res = $this->searchBo($obj)->toArray();
                 cache($this->getCacheKey($id),$res);
             }
         }else{
-            $res = $this->field($field)->find($id)->toArray();
+            $obj = $this->field($field)->find($id);
+            $res = $this->searchBo($obj)->toArray();
         }
         return $res;
     }
@@ -127,19 +130,21 @@ class Basic extends Model {
         !$isJoin && $this->openCache && $this->field($this->cacheKey);
         if($paginate){
             if($apiModel){
-                $res = $this->hidden($hiddenField)->paginate($limit)->toArray();
+                $obj = $this->hidden($hiddenField)->paginate($limit);
+                $res = $this->searchBo($obj)->toArray();
                 !$isJoin && $res = $this->listFormat($res);
                 return $res;
             }else{
-                $res = $this->hidden($hiddenField)->paginate($limit);
-                $page = $res->render(); //分页
-                $list = $res->toArray(); //数据
+                $obj = $this->hidden($hiddenField)->paginate($limit);
+                $obj = $this->searchBo($obj);
+                $page = $obj->render(); //分页
+                $list = $obj->toArray(); //数据
                 !$isJoin && $res = $this->listFormat($list['data']);
                 return [$page,$res];
             }
         }else{
 //            return $this->fetchSql(true)->select();
-            $res = collection($this->hidden($hiddenField)->select())->toArray();
+            $res = $this->searchBo(collection($this->hidden($hiddenField)->select()))->toArray();
             !$isJoin && $res = $this->listFormat($res);
             return $res;
         }
@@ -186,5 +191,33 @@ class Basic extends Model {
             }
         }
         return $data;
+    }
+
+    /**
+     * 获取关联
+     */
+    public function searchBo($obj) {
+        $len = count($this->bo);
+        if($len){
+            foreach ($this->bo as $item){
+                switch ($item){
+                    case 'belongsTo':
+                        $obj->belongsTo_;
+                        break;
+                    case 'hasOne':
+                        $obj->hasOne_;
+                        break;
+                    case 'hasMany':
+                        $obj->hasMany_;
+                        break;
+                    case 'belongsToMany':
+                        $obj->belongsToMany_;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return $obj;
     }
 }

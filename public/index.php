@@ -12,8 +12,9 @@
 // [ 应用入口文件 ]
 
 // 定义应用目录
+define('BIND_MODULE','index');
 define('APP_PATH', __DIR__ . '/../application/');
-define('SUCCESS_STATUS',0);
+define('SUCCESS_STATUS',1);
 define('FAIL_STATUS',-1);
 define('COMMON_MODULE',APP_PATH . 'common/model/'); //基础模型类
 define('COMMON_LOGIC',APP_PATH . 'common/logic/'); //公共逻辑

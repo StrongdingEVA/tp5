@@ -8,7 +8,7 @@
 namespace app\index\logic;
 
 class Index{
-    public function test() {
+    public function articleList() {
         $map = array(
             'condition' => array(
                 array('where' => 'alias','alias' => 'a'),
@@ -19,5 +19,11 @@ class Index{
             'hidden' => array('views','comts')
         );
         return ['list' => SM('Article/getListRows',$map)];
+    }
+
+    public function readArticle($request){
+        $id = $request->param('id');
+        $res = SM('Article/getById',$id);
+        return ['info' => $res];
     }
 }

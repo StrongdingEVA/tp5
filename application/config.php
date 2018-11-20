@@ -240,5 +240,14 @@ return [
     ],
 
     'SHOW_SQL_ERROR' => 1,
-    'DB_PREFIX' => 'tp_'
+    'DB_PREFIX' => 'tp_',
+
+    'LOGIN_TOKEN_EXPRE' => 3600 * 24 * 7,
+    'LOGIN_COOKIE_PREFIX' => 'tp_lg_',
+    'LOGIN_TOKEN_KEY' => 'thisiskey',
+
+    //aes加密相关
+    'AES_CIPHER' => 'aes-128-gcm',
+    'AES_KEY' => 'tp_key',
+
 ];
