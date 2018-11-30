@@ -588,7 +588,8 @@ class App
         $action = $actionName . $config['action_suffix'];
 
         $vars = [];
-        if (is_callable([$instance, $action])) {
+//        if (is_callable([$instance, $action])) {  //EDIT MARK
+        if (method_exists($instance,$action)) {
             // 执行操作方法
             $call = [$instance, $action];
             // 严格获取当前操作方法名
@@ -598,7 +599,8 @@ class App
             $actionName = $suffix ? substr($methodName, 0, -strlen($suffix)) : $methodName;
             $request->action($actionName);
 
-        } elseif (is_callable([$instance, '_empty'])) {
+//        } elseif (is_callable([$instance, '_empty'])) { //EDIT MARK
+        } elseif (method_exists($instance,'_empty')) {
             // 空操作
             $call = [$instance, '_empty'];
             $vars = [$actionName];

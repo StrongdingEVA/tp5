@@ -46,7 +46,7 @@ class Base extends Controller {
             }
             $this->u = $uInfo;
             $this->assign('uinfo',$uInfo);
-        }else{
+        }if(NOW_CONTROLLER == 'ucenter' && !$uInfo){
             $this->redirect('/');
         }
     }
@@ -92,147 +92,6 @@ class Base extends Controller {
      */
     protected function setError($errorNum,$flag=0,$url='',$replace='') {
         $this->ajaxSetError($errorNum,$flag,$url,$replace);
-    }
-
-    /**
-     * 返回正确数据
-     * @param string $data 需要返回的数据
-     * @return json
-     * @author fengxing
-     */
-    protected function setBack($data, $url = '', $second = 3, $moreData = array()) {
-        if( IS_AJAX || $data['return']==2) {
-            $return = [$data, $url, $second, $moreData];
-            $this->ajaxSetBack($return);
-            exit();
-        }
-        $this->ajaxSetBack($data, $url, $second, $moreData);
-        exit();
-    }
-
-    /**
-     * 通用返回数据
-     * @param array $buffer 返回数组
-     *              错误array(0,'错误编号','跳转地址',替换数据，跳转默认时间)
-     *              正确array(1,'正确提示|模板数据','跳转地址','跳转默认时间','更多数据包括cookie数据')
-     *              模板数据格式 array('pageName'=>'页面标题','buffer'=>array('数据内容'))
-     * @param int $ifTemplate 是否有可能模板输出 1是 0否
-     * @param int $ifFetch 是否返回模板输出数据 1是 0否
-     * @param array $moreData 更多的数据输出
-     * @return null
-     * @author fengxing
-     */
-    public function reback($buffer, $ifTemplate = 0, $ifFetch = 0) {
-        if ($buffer[0] === 0) {  //输出错误
-            if (empty($buffer[4]) || !is_numeric($buffer[4]))
-            $this->setError($buffer[1], IS_AJAX, $buffer[2], $buffer[3], $buffer[4]);
-        }else {
-            if ($ifTemplate == 1) {  //输出模板
-                /* 载入模板标签 */
-                if ($ifFetch)
-                    return $this->loadTemplate($buffer[1], $buffer[2], $ifFetch);
-                return $this->loadTemplate($buffer[1], $buffer[2]);
-            }else { //输出成功
-                if (empty($buffer[3]) || !is_numeric($buffer[3]))
-                    $buffer[3] = 3;
-                $this->setBack($buffer[1], $buffer[2], $buffer[3],$buffer[4]);
-            }
-        }
-    }
-    /**
-     * 载入模板数据
-     * @param int $buffer 模板数据
-     * @param int $tempFile 模板文件
-     * @param int $ifFetch 是否返回模板输出数据 1是 0否
-     * @author fengxing
-     */
-    public function loadTemplate($params, $tempFile = '', $ifFetch = 0) {
-        foreach ($params as $i => $param) {
-            $this->assign($i, $param); //模板标识
-        }
-        if ($ifFetch === 0)
-            return $this->display($tempFile);
-        return $this->fetch($tempFile);
-    }
-
-    /**
-     * ajax 返回所有错误码
-     * @param string $errorNum 错误码 多个则以逗号间隔
-     * @param int $flag=0 类型 默认0返回错误页面 1返回ajax数据 2返回字符串
-     * @param string $url 跳转路径
-     * @param string $replace 错误码中%s替换 多个则以逗号间隔
-     * @param string $diplayContent='Public/error' 默认加载模板
-     * @return string|json
-     * @author demo
-     */
-    public function ajaxSetError($errorNum,$flag=0,$url='',$replace='',$displayContent=''){
-
-        if(!$errorNum) return ; //错误码为空
-
-        //兼容多个错误码
-        if(!is_array($errorNum)) $numArray=explode(',',$errorNum);
-        else $numArray=$errorNum;
-
-        $error = implode(',', $numArray);
-        if (!$error)
-            $error = '未知错误！'; //错误描述为空
-
-        if(empty($error)){
-            $error=$errorNum; //错误描述为空
-            $errorNum=0;
-        }
-        if ($flag === false)
-            $flag = 0;
-        if ($flag === true)
-            $flag = 1;
-
-
-        //返回类型
-        switch($flag){
-            case 0:
-                $this->showPageMsg($error, $url,3,$displayContent);
-                break;
-            case 1:
-                if($url){
-                    $data=[$error, $url, 3];
-                }else{
-                    $data=$error;
-                }
-
-                $newData['data']=$data;
-                $newData['status']=0;
-                $this->ajaxReturn($newData,'json');
-                break;
-            case 2:
-                return $error;
-                break;
-        }
-    }
-    /**
-     * 返回正确数据
-     * @param string $data 需要返回的数据
-     * @param string $url 跳转地址
-     * @param int $second 跳转间隔时间
-     * @return json
-     * @author demo
-     */
-    public function ajaxSetBack($data,$url='',$second=3, $moreData = array()) {
-        if( IS_AJAX || $data['return']==2) {
-            $newData['data']=$data;
-            $newData['status']=1;
-            if(!empty($moreData)) $newData['code']=$moreData;
-            $this->ajaxReturn($newData,'json');
-        }
-        $this->showPageMsg($data,$url,$second);
-    }
-    /**
-     * 返回json数据
-     * @param array $data 需要返回的数据
-     * @return json
-     * @author demo
-     */
-    public function ajaxBack($data) {
-        $this->ajaxReturn($data,'json');
     }
 
     /**
@@ -320,5 +179,13 @@ class Base extends Controller {
     public function cajax(string $msg = '',$data = '',int $status = -1){
         !$data && $data = (object)$data;
         return ['status' => $status,'msg' => $msg,'data' => $data];
+    }
+
+    public function _empty(Request $request){
+        $isAjax = false;
+        if($request->isAjax()){
+            $isAjax = true;
+        }
+        $this->cyasync(['msg' => '操作错误','status' => -1,'url' => '/'],$isAjax);
     }
 }

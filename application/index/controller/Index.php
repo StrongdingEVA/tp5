@@ -2,13 +2,15 @@
 namespace app\index\controller;
 
 use app\common\Controller\Base;
+use think\cache\driver\Redis;
 use think\Request;
 
 class Index extends Base
 {
-    public function index(Request $request)
+    public function index()
     {
-        return $this->cyback();
+        $res = SL('Index/articleList');
+        return $this->cyback($res);
     }
 
     //异步登录

@@ -11,7 +11,8 @@ use app\common\model\Basic;
 //use think\Model;
 
 class Article extends Basic {
-    protected $openCache = false;
+    protected $openCache = true;
+    protected $cachePrex = 'article_'; //缓存前缀';
     protected $bo = ['belongsTo'];
 
 

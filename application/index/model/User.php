@@ -11,7 +11,7 @@ use app\common\model\Basic;
 //use think\Model;
 
 class User extends Basic {
-    static $cachePrex = 'user_'; //缓存前缀
+    protected $cachePrex = 'user_'; //缓存前缀
     protected $openValidate = false; //是否开启模型自动验证
     protected $openCache = true; //是否开启主键缓存
     protected $cacheKey = 'id'; //主键名

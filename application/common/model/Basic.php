@@ -14,7 +14,7 @@ class Basic extends Model {
 //    protected function setCreateTimeAttr(){
 //        return time();
 //    }
-    static $cachePrex = 'basic_key_'; //缓存前缀
+    protected $cachePrex = 'basic_key_'; //缓存前缀
     protected $openValidate = false; //是否开启模型自动验证
     protected $openCache = false; //是否开启主键缓存
     protected $cacheKey = 'id'; //主键名
@@ -124,10 +124,13 @@ class Basic extends Model {
         $order && $this->order($order);
         $page && $this->page($page);
         $page && $this->limit($limit);
-        $field && $this->field($field);
         //如果开启了主键缓存（根据表主键建立缓存） 查询时设置查询字段为id，之后根据id从缓存中取数据
         //如果使用链接查询则不使用主键缓存
-        !$isJoin && $this->openCache && $this->field($this->cacheKey);
+        if(!$isJoin){
+            $this->openCache && $this->field($this->cacheKey);
+        }else{
+            $field && $this->field($field);
+        }
         if($paginate){
             if($apiModel){
                 $obj = $this->hidden($hiddenField)->paginate($limit);
@@ -180,12 +183,12 @@ class Basic extends Model {
     }
 
     public function getCacheKey($id){
-        return self::$cachePrex . $id;
+        return $this->cachePrex . $id;
     }
 
     public function listFormat(array $data):array {
         if($this->openCache){
-            foreach ($data['data'] as &$item){
+            foreach ($data as &$item){
                 $res = $this->getById($item[$this->cacheKey]);
                 $item = $res;
             }

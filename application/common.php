@@ -271,34 +271,6 @@ function emptyUrl() {
     exit();
 }
 
-/**
- * 上传数据到远程
- * @param string $url 提交地址
- * @param array  $data 提交数据
- * @return String
- * @author fengxing
- */
-function CURL($url, $data = '') {
-    $curl = curl_init();
-
-    if (!empty($data)) {
-        curl_setopt($curl, CURLOPT_POST, 1);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-    }
-    curl_setopt($curl, CURLOPT_HEADER, false);
-    curl_setopt($curl, CURLOPT_URL, $url);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-    if (strstr($url, 'https://')) {
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE); // https请求 不验证证书和hosts
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
-    }
-
-    $result = curl_exec($curl);
-    $error = curl_error($curl);
-    $output = $error ? $error : $result;
-    return $output;
-}
 
 /**
  * Token检查
@@ -330,45 +302,10 @@ function checkToken($data) {
 }
 
 /**
- * 描述：获取静态方法
- * @return string
- * @author fengxing
- */
-function getStaticFunction($modelName, $functionName) {
-    $modell = D($modelName);
-    return $modell::$functionName;
-}
-
-/**
- * 通用获取API方法 用于__call
- * @param string $functionName 当前调用的方法名称
- * @param string $args 参数数组
- * @return mixed
- * @author fengxing
- */
-function getApi($functionName, $args) {
-
-    $module = str_replace('getApi', '', $functionName);
-
-    //处理$args[0]目前结构为Grade/grade
-    $urlArray = explode('/', $args[0]);
-
-    $model = A($module . '/' . $urlArray[0], 'Api');
-    if ($model === false)
-        return '';
-    $param = $args;
-    $param = array_slice($param, 1);
-    return call_user_func_array(array(
-        $model,
-        $urlArray[1]), $param);
-}
-
-/**
  * 兼容低版本的函数<5.5
  * @author fengxing
  */
 if (!function_exists('array_column')) {
-
     function array_column($input, $columnKey, $indexKey = null) {
         $columnKeyIsNumber = (is_numeric($columnKey)) ? true : false;
         $indexKeyIsNull = (is_null($indexKey)) ? true : false;
@@ -455,8 +392,8 @@ function SL() {
     }else{
         exception('不存在要实例化的逻辑类：' . $urlArray[0],-1);
     }
-
-    $logic = new $lName;
+    $option = isset($param[2]) ? $param[2] : array();
+    $logic = new $lName($option);
     if (count($urlArray) == 1)
         return $logic;
 
@@ -464,26 +401,11 @@ function SL() {
     return call_user_func_array(array($logic,$urlArray[1]), $param);
 }
 
-/**
- * 获取路径参数数据
- * @return null
- * @author fengxing
- */
-function SU($num) {
-    $param = $_SERVER['REQUEST_URI'];
-    $param = str_replace('.' . C('URL_HTML_SUFFIX'), '', $param); //去掉后缀
-    $param = preg_replace('/\?\=/', C('URL_PATHINFO_DEPR'), $param); //替换问号和等号
-    $paramArray = explode(C('URL_PATHINFO_DEPR'), $param);
-    return $paramArray[$num];
-}
-
 //兼容mysql获取方法
 if (!function_exists('mysql_get_server_info')) {
-
     function mysql_get_server_info() {
         return '';
     }
-
 }
 
 
@@ -582,10 +504,23 @@ function checkEmail($email){
     return false;
 }
 
+/**
+ * 验证手机号
+ * @param $mobile
+ * @return bool
+ */
 function checkMobile($mobile){
     return false;
 }
 
+/**
+ * aes加密  $cipher $iv $tag 要保存  解密的时候要用到
+ * @param $data
+ * @param string|null $cipher
+ * @param string|null $key
+ * @param int $options
+ * @return array|string
+ */
 function aesEncrypt($data,string $cipher = null,string $key = null,int $options = 0){
     $cipher = $cipher ?? config('AES_CIPHER');
     $key = $key ?? config('AES_KEY');
@@ -599,6 +534,16 @@ function aesEncrypt($data,string $cipher = null,string $key = null,int $options 
     return '';
 }
 
+/**
+ * aes解密
+ * @param $data
+ * @param $iv
+ * @param $tag
+ * @param string|null $cipher
+ * @param string|null $key
+ * @param int $options
+ * @return string
+ */
 function aesDecrypt($data,$iv,$tag,string $cipher = null,string $key = null,int $options = 0){
     $cipher = $cipher ?? config('AES_CIPHER');
     $key = $key ?? config('AES_KEY');
@@ -608,4 +553,44 @@ function aesDecrypt($data,$iv,$tag,string $cipher = null,string $key = null,int 
         return $original_plaintext;
     }
     return '';
+}
+
+function curl() {
+    $param = func_get_args();
+    $url = $param[0];
+    $data = $param[1];
+    $cookie = $param[2];
+    $header = $param[3];
+    $refere = $param[4];
+
+    if ( is_array ( $data ) ){
+        $data_string = http_build_query($data);
+    }else{
+        $data_string = $data;
+    }
+    $ch = curl_init(); //初始化curl
+    curl_setopt($ch, CURLOPT_URL, $url); //设置链接
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //设置是否返回信息
+    //curl_setopt($ch, CURLOPT_HEADER, true);//设定是否输出页面内容
+    if($refere){
+        curl_setopt($ch,CURLOPT_REFERER,$refere);
+    }
+    if (count($header) > 0) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header); //设置HTTP头
+    }
+    if($data){
+        curl_setopt($ch, CURLOPT_POST, 1); //设置为POST方式
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string); //POST数据
+    }
+    if($cookie){
+        curl_setopt($ch,CURLOPT_COOKIE,$cookie);
+    }
+    $response = curl_exec($ch); //接收返回信息
+    if (curl_errno($ch)) { //出错则显示错误信息
+        print curl_error($ch);
+    }
+    curl_close($ch);
+    return $response;
 }

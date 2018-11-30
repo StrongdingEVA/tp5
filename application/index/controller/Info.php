@@ -6,14 +6,11 @@
  * Time: 18:11
  */
 namespace app\index\controller;
-use think\controller\Rest;
+use app\common\controller\Base;
+use think\Request;
 
-class Info extends Rest{
-    public function read_json($id){
-        echo 'this is json';exit;
-    }
-
-    public function read_xml($id){
-        echo 'this is xml';exit;
+class Info extends Base {
+    public function test(){
+        echo 'this is test';exit;
     }
 }
